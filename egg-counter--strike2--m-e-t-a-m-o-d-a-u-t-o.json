@@ -1,0 +1,47 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2024-02-12T14:58:47+01:00",
+    "name": "Counter-Strike 2 (METAMOD AUTO)",
+    "author": "imp87",
+    "description": "Counter-Strike is a multiplayer first-person shooter video game developed by Valve. This image is based on Valve's Steam Runtime 3 platform (codenamed SNIPER) and was created to run both CSGO and CS2 without issues.",
+    "features": [
+        "gsl_token",
+        "steam_disk_space"
+    ],
+    "docker_images": {
+        "SteamRT3": "ghcr.io\/1zc\/steamrt3-pterodactyl:latest",
+        "SteamRT3-Dev": "ghcr.io\/1zc\/steamrt3-pterodactyl:dev",
+        "SteamRT3-GFL": "registry.gitlab.gflclan.com\/infra\/cs2-pterodactyl:latest"
+    },
+    "file_denylist": [],
+    "startup": ".\/game\/cs2.sh  -dedicated +ip {{SERVER_IP}} -port {{SERVER_PORT}} +map {{SRCDS_MAP}}",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": \"Connection to Steam servers successful\"\r\n}",
+        "logs": "{}",
+        "stop": "quit"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!\/bin\/bash\r\n# steamcmd Base Installation Script\r\n\r\n# Set default Steam credentials if not provided\r\nif [ \"${STEAM_USER}\" == \"\" ]; then\r\n    STEAM_USER=anonymous\r\n    STEAM_PASS=\"\"\r\n    STEAM_AUTH=\"\"\r\nfi\r\n\r\n# Install necessary dependencies\r\napt install curl zip -y\r\n\r\n# Download and install steamcmd\r\ncd \/tmp\r\nmkdir -p \/mnt\/server\/steamcmd\r\ncurl -sSL -o steamcmd.tar.gz https:\/\/steamcdn-a.akamaihd.net\/client\/installer\/steamcmd_linux.tar.gz\r\ntar -xzvf steamcmd.tar.gz -C \/mnt\/server\/steamcmd\r\nmkdir -p \/mnt\/server\/steamapps # Fix steamcmd disk write error when this folder is missing\r\ncd \/mnt\/server\/steamcmd\r\nchown -R root:root \/mnt\r\nexport HOME=\/mnt\/server\r\n\r\n# Install the game using steamcmd\r\n.\/steamcmd.sh +force_install_dir \/mnt\/server +login anonymous +app_update 730 ${EXTRA_FLAGS} +quit\r\n\r\n# Set up 32-bit libraries\r\nmkdir -p \/mnt\/server\/.steam\/sdk32\r\ncp -v linux32\/steamclient.so ..\/.steam\/sdk32\/steamclient.so\r\n\r\n# Set up 64-bit libraries\r\nmkdir -p \/mnt\/server\/.steam\/sdk64\r\ncp -v linux64\/steamclient.so ..\/.steam\/sdk64\/steamclient.so\r\n\r\n# Determine the latest Metamod version\r\nMETAMOD_URL=$(curl -sSL \"https:\/\/mms.alliedmods.net\/mmsdrop\/2.0\/\" | grep -o 'href=\"[^\"]*\"' | grep -o '[^\"]*mmsource-2.0.0-git[0-9]*-linux.tar.gz' | sort -V | tail -n 1)\r\n\r\n# Download and install the latest Metamod version\r\nmkdir -p \/mnt\/server\/game\/csgo\/addons\r\ncd \/mnt\/server\/game\/csgo\/addons\r\ncurl -sSL -o metamod.tar.gz \"https:\/\/mms.alliedmods.net\/mmsdrop\/2.0\/${METAMOD_URL}\"\r\ntar -xzvf metamod.tar.gz --strip-components=1 -C .\r\nrm metamod.tar.gz\r\nwget -O \/mnt\/server\/game\/csgo\/gameinfo.gi https:\/\/fastdl.q-linx.de\/ptero\/cs2\/metamod\/gameinfo.gi",
+            "container": "ghcr.io\/pterodactyl\/installers:debian",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Map",
+            "description": "The default map for the server.",
+            "env_variable": "SRCDS_MAP",
+            "default_value": "de_dust2",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|alpha_dash",
+            "field_type": "text"
+        }
+    ]
+}
